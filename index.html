@@ -91,7 +91,7 @@
                 </td>
             </tr>
             <tr>
-                <td class="title">Ссылка на статью</td>
+                <td class="title">Пользователь</td>
                 <td>
                     <input type="text" class="form-data" id="post-url">
                 </td>
@@ -260,19 +260,19 @@
     Page.showListFollowersUsers = function() {
         console.log('showListRepostedUsers');
 
-
-        Page.validateFromLink();
         Page.validateNotEmpty('payer-active-key');
         Page.validateNotEmpty('payer-user');
         Page.validateNotEmpty('payer-amount');
 
-        var urlInfo = Page.getInfoFromLink();
-        if (typeof urlInfo.golos_user === 'undefined') {
+        var user = document.getElementById('post-url').value;
+        if (typeof user !== 'undefined') {
+            console.log(user);
             var p1 = new Promise(
                 function(resolve, reject) {
-                    resolve(Page.getFollowersUsers(urlInfo));
+                    resolve(Page.getFollowersQuatity(user));
                 });
-            p1.then(Page.showUsersList);
+            p1.then(Page.getFollowersUsers)
+                .then(Page.showUsersList);
         }
 
     }
@@ -317,31 +317,34 @@
         }
     }
 
-    Page.getFollowersUsers = function (query) {
-        console.log('getRebloggedtUsers');
-        console.log(query);
+    Page.getFollowersQuatity = function (user) {
+        console.log('getFollowersQuatity', user);
+        return Page.getApi().api.getFollowCount(user, function(err, result) {
+//            console.log(err, result);
+            if (err) {
+                alert('error');
+                return [];
+            }
 
+            return result;
+        });
+    }
+
+    Page.getFollowersUsers = function (obj) {
+        console.log('getFollowersUsers', obj);
         var followers = [];
-        Page.getApi().api.getFollowCount(name, function(err, result) {
+        return Page.getApi().api.getFollowers(obj.account, 0, 'blog', obj.follower_count, function(err, result) {
             console.log(err, result);
             if (err) {
                 alert('error');
                 return [];
             }
-            var follower_count = result.follower_count;
+            for (var j = 0; j < result.length; j++) {
+                result[j] = result[j]['follower'];
+            }
+            console.log('followers', result);
 
-            Page.getApi().api.getFollowers(name, 0, 'blog', follower_count, function(err, result) {
-                console.log(err, result);
-                if (err) {
-                    alert('error');
-                    return [];
-                }
-                for (var j = 0; j < result.length; j++) {
-                    followers[j] = result[j]['follower'];
-                }
-
-                return followers;
-            });
+            return result;
         });
     }
 

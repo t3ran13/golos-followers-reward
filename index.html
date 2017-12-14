@@ -55,46 +55,49 @@
                 <h2>Followers Reward</h2>
             </caption>
             <tr>
-                <td class="title">Блокчейн</td>
+                <td class="title">Блокчейн/ Blockchain</td>
                 <td>
                     <input type="radio" onclick="Page.changePlatform();" name="platform" checked="checked" value="golos"> Golos
                     <input type="radio" onclick="Page.changePlatform();" name="platform" value="steem"> Steem
                 </td>
             </tr>
             <tr>
-                <td class="title">Ник плательщика@</td>
+                <td class="title">Ник плательщика / Payer user @</td>
                 <td>
                     <input type="text" class="form-data" id="payer-user">
                 </td>
             </tr>
             <tr>
-                <td class="title">Активный ключ плательщика</td>
+                <td class="title">Активный ключ плательщика/ Payer active key</td>
                 <td>
                     <input type="text" class="form-data" id="payer-active-key" style="width: 30px;">
                 </td>
             </tr>
             <tr>
-                <td class="title">Награда</td>
+                <td class="title">Награда/ Reward</td>
                 <td>
-                    <input type="text" class="form-data" id="payer-amount" placeholder="0.1">
+                    <input onkeyup="Page.changeMoneyDistribution();" type="text" class="form-data" id="payer-amount" placeholder="0.1">
                     <select id="payer-amount-kind">
-                        <option value="GOLOSPOWER">СИЛА ГОЛОСА</option>
+                        <option value="GOLOSPOWER">СИЛА ГОЛОСА (GP)</option>
                         <option value="GOLOS">GOLOS (ГОЛОС)</option>
                         <option value="GBG">GBG (ЗОЛОТОЙ)</option>
                         <option value="STEEMPOWER">STEEM POWER</option>
                         <option value="STEEM">STEEM</option>
                         <option value="SBD">SBD ($)</option>
                     </select>
+                    <br>
+                    <input type="radio" onchange="Page.changeMoneyDistribution();" name="payer-money-distribution" checked="checked" value="each"> Каждому/ Each
+                    <input type="radio" onchange="Page.changeMoneyDistribution();" name="payer-money-distribution" value="all"> На всех/ Tatal
                 </td>
             </tr>
             <tr>
-                <td class="title">Сообщение к переводу</td>
+                <td class="title">Сообщение к переводу/ Transfer message</td>
                 <td>
-                    <input type="text" class="form-data" id="payer-memo" value="За репост {post_link}">
+                    <input type="text" class="form-data" id="payer-memo" value="За репост">
                 </td>
             </tr>
             <tr>
-                <td class="title">Пользователь</td>
+                <td class="title">Пользователь /User</td>
                 <td>
                     <input type="text" class="form-data" id="post-url">
                 </td>
@@ -102,7 +105,7 @@
             <tr>
                 <td></td>
                 <td>
-                    <input type="submit" class="submit-data" value="Показать подписчиков" onclick="Page.showListFollowersUsers();">
+                    <input type="submit" class="submit-data" value="Показать подписчиков/ Show Followers" onclick="Page.showListFollowersUsers();">
                 </td>
             </tr>
         </table>
@@ -114,6 +117,7 @@
 
     function Page() {
         var api = null;
+        var rewardPerUser = null;
     }
 
     var Page = new Page();
@@ -141,6 +145,77 @@
         Page.setApi(platform);
 
         Page.displaySelectCurrency(platform);
+    }
+
+    Page.changeMoneyDistribution = function() {
+        console.log('changeMoneyDistribution');
+
+        Page.updateRewardPerUser();
+
+        Page.showRewardSum();
+    }
+
+    Page.updateRewardPerUser = function() {
+        console.log('updateRewardPerUser');
+
+        var dist = document.querySelector('input[name="payer-money-distribution"]:checked').value;
+        var amt = document.getElementById('payer-amount').value;
+        amt = Number(amt.trim()).toFixed(3);
+        var list = Page.getCheckedUsers();
+
+        if (dist === 'all') {
+            if (list.length > 0) {
+                rewardPerUser = (amt / list.length).toFixed(3) ;
+            } else {
+                rewardPerUser = (0).toFixed(3) ;
+            }
+        } else {
+            rewardPerUser = amt;
+        }
+    }
+
+    Page.showRewardSum = function() {
+        console.log('showRewardSum');
+
+        var el = document.getElementById('money-distribution-info-1');
+        var el2 = document.getElementById('money-distribution-info-2');
+        if (el != null) {
+            var amt = Page.getRewardPerUser();
+            var list = Page.getCheckedUsers();
+            var kind = document.getElementById('payer-amount-kind').value;
+            el.innerHTML = rewardPerUser + ' ' + kind;
+            html = '';
+
+            if (list.length > 0) {
+                html += (amt * list.length).toFixed(3) ;
+            } else {
+                html += (0).toFixed(3) ;
+            }
+
+            el2.innerHTML = html + ' ' + kind;
+        }
+    }
+
+    Page.getRewardPerUser = function() {
+        console.log('getRewardPerUser');
+
+        return rewardPerUser;
+    }
+
+    Page.getCheckedUsers = function() {
+        console.log('getCheckedUsers');
+        var listChecked = [];
+
+        var list = document.getElementsByClassName("rewarded-user");
+        if (list != null && list.length > 0) {
+            Array.from(list).forEach(function(checkbox) {
+                if (checkbox.checked === true) {
+                    listChecked.push(checkbox);
+                }
+            });
+        }
+
+        return listChecked;
     }
 
     Page.displaySelectCurrency = function(platform) {
@@ -182,7 +257,7 @@
             || document.getElementById('payer-active-key').value === ''
             || document.getElementById('payer-amount').value === ''
         ) {
-            alert('Заполните все поля');
+            alert('Заполните все поля/ Fill all fields');
             return;
         }
 
@@ -236,7 +311,7 @@
             });
         } else {
             var memo = document.getElementById('payer-memo').value;
-            memo = memo.replace('{post_link}', document.getElementById('post-url').value);
+            memo = document.getElementById('post-url').value;
 
             console.log('from', from);
             console.log('to', to);
@@ -270,12 +345,22 @@
         var user = document.getElementById('post-url').value;
         if (typeof user !== 'undefined') {
             console.log(user);
+            var list = [];
             var p1 = new Promise(
                 function(resolve, reject) {
                     resolve(Page.getFollowersQuatity(user));
                 });
-            p1.then(Page.getFollowersUsers)
-                .then(Page.showUsersList);
+            p1.then(
+                function(obj) {
+                    return Page.getFollowersUsers(obj.account, 0, obj.follower_count, list);
+                }
+            )
+//                .then(
+//                function(obj) {
+//                    Page.showUsersList(list);
+//                }
+//            )
+            ;
         }
 
     }
@@ -333,44 +418,76 @@
         });
     }
 
-    Page.getFollowersUsers = function (obj) {
-        console.log('getFollowersUsers', obj);
-        var followers = [];
-        return Page.getApi().api.getFollowers(obj.account, 0, 'blog', obj.follower_count, function(err, result) {
+    Page.getFollowersUsers = function (account, from_c, to_c, list) {
+        console.log('getFollowersUsers', from_c, to_c, list);
+        if (to_c - from_c > 1000) {
+            to_c2 = 1000;
+        } else {
+            to_c2 = to_c - from_c;
+        }
+        return Page.getApi().api.getFollowers(account, from_c, 'blog', to_c2, function(err, result) {
             console.log(err, result);
             if (err) {
                 alert('error');
                 return [];
             }
             for (var j = 0; j < result.length; j++) {
-                result[j] = result[j]['follower'];
+                list.push(result[j]['follower']);
             }
-            console.log('followers', result);
 
-            return result;
+            if (list.length < to_c) {
+                console.log('list.length', list.length);
+                return Page.getFollowersUsers(account, from_c + to_c2, to_c, list);
+            } else {
+                console.log('123list.length', list.length);
+                Page.showUsersList(list);
+                return ;
+            }
         });
     }
 
     Page.showUsersList = function(list) {
-        console.log('showUsersList', list);
+        console.log('showUsersList', list, list.length);
 
         var html = '<table id="table-with-users">';
         html += '<tr>';
-        html += '<td>';
-        html += '<span class="checkbox-set-all" onclick="Page.pressAll();">Все</span>'
+        html += '<td colspan="2">';
+        html += 'Каждому пользователю/ Each user:';
         html += '</td>';
         html += '<td>';
         html += '</td>';
         html += '<td>';
-        html += '</td>';
-        html += '<td>';
-        html += 'Всего: ' + list.length;
+        html += '<span id="money-distribution-info-1">~</span>';
         html += '</td>';
         html += '</tr>';
+        html += '<tr>';
+        html += '<td colspan="2">';
+        html += 'Всего/ Total:';
+        html += '</td>';
+        html += '<td>';
+        html += '</td>';
+        html += '<td>';
+        html += '<span id="money-distribution-info-2">~</span>';
+        html += '</td>';
+        html += '</tr>';
+
+        html += '<tr>';
+        html += '<td>';
+        html += '<span class="checkbox-set-all" onclick="Page.pressAll();">Все<br>/All</span>'
+        html += '</td>';
+        html += '<td>';
+        html += '</td>';
+        html += '<td>';
+        html += '</td>';
+        html += '<td>';
+        html += 'Всего/ Total: <span id="total-checked-users">~</span>';
+        html += '</td>';
+        html += '</tr>';
+
         list.forEach(function(user) {
             html += '<tr>';
             html += '<td>';
-            html += '<input type="checkbox" checked="checked" class="rewarded-user" id="' + user + '">';
+            html += '<input onchange="Page.changeUserCheckbox();" type="checkbox" checked="checked" class="rewarded-user" id="' + user + '">';
             html += '</td>';
             html += '<td>';
             html += user;
@@ -379,18 +496,20 @@
             html += '0';
             html += '</td>';
             html += '<td>';
-            html += '<input type="submit" class="submit-data" value="Вознаградить" onclick="Page.rewardUser(\'' + user + '\');">';
+            html += '<input type="submit" class="submit-data" value="Вознаградить/ Reward" onclick="Page.rewardUser(\'' + user + '\');">';
             html += '</td>';
             html += '</tr>';
         });
         html += '<tr>';
         html += '<td colspan="4">';
-        html += '<input type="submit" class="submit-data" value="Повелеваю вознаградить выбранных!" onclick="Page.rewardUsers();">';
+        html += '<input type="submit" class="submit-data" value="Вознаградить выбранных/ Reward checked" onclick="Page.rewardUsers();">';
         html += '</td>';
         html += '</tr>';
         html += '</table>';
 
         document.getElementById('users-list').innerHTML = html;
+
+        Page.changeUserCheckbox();
     }
 
 
@@ -414,6 +533,25 @@
             });
         }
         isAllSelected = false;
+
+
+        Page.changeUserCheckbox();
+    }
+
+    Page.changeUserCheckbox = function() {
+        console.log('changeUserCheckbox');
+
+        Page.changeCheckedUsersSum();
+        Page.changeMoneyDistribution();
+    }
+
+    Page.changeCheckedUsersSum = function() {
+        console.log('showCheckedUsersSum');
+
+        var q = 0;
+        var list = Page.getCheckedUsers();
+
+        document.getElementById('total-checked-users').innerHTML = list.length;
     }
 
 
